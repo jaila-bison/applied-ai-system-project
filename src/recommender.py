@@ -37,13 +37,39 @@ class Recommender:
     def __init__(self, songs: List[Song]):
         self.songs = songs
 
+    def _score(self, user: UserProfile, song: Song) -> float:
+        """
+        Weighted similarity score in [0, 1].
+        Weights: genre 0.35 + mood 0.25 + energy 0.25 + acousticness 0.15 = 1.00
+        """
+        acoustic_score = song.acousticness if user.likes_acoustic else (1.0 - song.acousticness)
+        return (
+            (1.0 if song.genre == user.favorite_genre else 0.0) * 0.35
+            + (1.0 if song.mood == user.favorite_mood else 0.0) * 0.25
+            + max(0.0, 1.0 - abs(song.energy - user.target_energy)) * 0.25
+            + max(0.0, acoustic_score) * 0.15
+        )
+
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        ranked = sorted(self.songs, key=lambda s: self._score(user, s), reverse=True)
+        return ranked[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
-        # TODO: Implement explanation logic
-        return "Explanation placeholder"
+        reasons = []
+        if song.genre == user.favorite_genre:
+            reasons.append(f"genre ({song.genre})")
+        if song.mood == user.favorite_mood:
+            reasons.append(f"mood ({song.mood})")
+        if abs(song.energy - user.target_energy) <= 0.15:
+            reasons.append(f"energy ({song.energy:.2f} ≈ target {user.target_energy:.2f})")
+        acoustic_label = "acoustic" if user.likes_acoustic else "non-acoustic"
+        if user.likes_acoustic and song.acousticness >= 0.70:
+            reasons.append(f"{acoustic_label} feel (acousticness {song.acousticness:.2f})")
+        elif not user.likes_acoustic and song.acousticness <= 0.30:
+            reasons.append(f"{acoustic_label} feel (acousticness {song.acousticness:.2f})")
+        if not reasons:
+            reasons.append(f"closest overall match (score {self._score(user, song):.2f})")
+        return "Matched your " + ", ".join(reasons) + "."
 
 def load_songs(csv_path: str) -> List[Dict]:
     """
@@ -66,14 +92,23 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
+    def _get(key: str, default: float) -> float:
+        """Return user_prefs[key], falling back to default if absent or None."""
+        v = user_prefs.get(key)
+        return default if v is None else v
+
     def score(song: Dict) -> float:
-        """Return a 0–1 weighted similarity score between a song and the user's preferences."""
+        """
+        Weighted similarity score in [0, 1].
+        Weights: genre 0.30 + mood 0.25 + energy 0.20 + valence 0.15 + danceability 0.10 = 1.00
+        Continuous terms are clamped to [0, 1] to guard against out-of-range inputs.
+        """
         return (
             (1.0 if song["genre"] == user_prefs.get("genre") else 0.0) * 0.30
             + (1.0 if song["mood"] == user_prefs.get("mood") else 0.0) * 0.25
-            + (1.0 - abs(song["energy"] - user_prefs.get("energy", 0.5))) * 0.20
-            + (1.0 - abs(song["valence"] - user_prefs.get("target_valence", 0.5))) * 0.15
-            + (1.0 - abs(song["danceability"] - user_prefs.get("target_danceability", 0.5))) * 0.10
+            + max(0.0, 1.0 - abs(song["energy"] - _get("energy", 0.5))) * 0.20
+            + max(0.0, 1.0 - abs(song["valence"] - _get("target_valence", 0.5))) * 0.15
+            + max(0.0, 1.0 - abs(song["danceability"] - _get("target_danceability", 0.5))) * 0.10
         )
 
     def explain(song: Dict) -> str:
@@ -83,8 +118,12 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
             reasons.append(f"genre ({song['genre']})")
         if song["mood"] == user_prefs.get("mood"):
             reasons.append(f"mood ({song['mood']})")
-        if abs(song["energy"] - user_prefs.get("energy", 0.5)) <= 0.15:
-            reasons.append(f"energy ({song['energy']:.2f} ≈ target {user_prefs.get('energy', 0.5):.2f})")
+        if abs(song["energy"] - _get("energy", 0.5)) <= 0.15:
+            reasons.append(f"energy ({song['energy']:.2f} ≈ target {_get('energy', 0.5):.2f})")
+        if abs(song["valence"] - _get("target_valence", 0.5)) <= 0.15:
+            reasons.append(f"valence ({song['valence']:.2f} ≈ target {_get('target_valence', 0.5):.2f})")
+        if abs(song["danceability"] - _get("target_danceability", 0.5)) <= 0.15:
+            reasons.append(f"danceability ({song['danceability']:.2f} ≈ target {_get('target_danceability', 0.5):.2f})")
         if not reasons:
             reasons.append(f"closest overall match (score {score(song):.2f})")
         return "Matched your " + ", ".join(reasons) + "."
