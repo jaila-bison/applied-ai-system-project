@@ -1,5 +1,7 @@
 # 🎵 Music Recommender Simulation
 
+![alt text](image.png)
+
 ## Project Summary
 
 In this project you will build and explain a small music recommender system.
@@ -23,12 +25,23 @@ Some prompts to answer:
 
 - What features does each `Song` use in your system
   - For example: genre, mood, energy, tempo
+In my system the features will be energy,valence, genre, mood, dancability, and accousticness.
+
 - What information does your `UserProfile` store
+In the user profile these things will be stored fav genre, fav mood, target energy, target dancability, and like accoustics
+
 - How does your `Recommender` compute a score for each song
+score will equal the sum of 
+genre match *.30
+mood match *.25
+energy score *.20
+valence score *.15
+dance score *.10
+
 - How do you choose which songs to recommend
+The songs chosen will be closer to the target scores 
 
-You can include a simple diagram or bullet list if helpful.
-
+This system will probably be good at finding songs very close to what they want, but wont have much diversity.
 ---
 
 ## Getting Started
