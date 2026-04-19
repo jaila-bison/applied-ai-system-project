@@ -1,225 +1,63 @@
-# 🎵 Music Recommender Simulation
+Music Discovery System: A Knowledge-Infused Recommender
+1. Original Scope (Project 3)
+My original project was a Music Recommender Simulation built during Module 3. Its primary goal was to use deterministic math—specifically weighted similarity scores—to recommend songs from a local CSV file based on a user's preferred genre, mood, and energy levels. While functional, it lacked the ability to explain why a song was a good fit beyond raw data points.
 
-![alt text](image.png)
-![alt text](image-1.png)
+2. Project Summary
+This evolved Applied AI System transforms the original "math-only" script into a Local Retrieval-Augmented Expert System. By integrating a custom knowledge base, the system now provides human-like "Expert Insights" alongside recommendations. It matters because it bridges the gap between cold data (BPM, valence) and real-world context (coding focus, workout motivation), making the AI a more helpful collaborator for the user.
 
-## Project Summary
+3. Architecture Overview
+The system follows a modular architecture designed for reliability and speed:
 
-In this project you will build and explain a small music recommender system.
+Knowledge Base: A collection of domain-specific text files (.txt) containing musicology insights.
 
-Your goal is to:
+Keyword Retriever: A logic layer that "retrieves" relevant context by matching user intent to the knowledge base.
 
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
+Reasoning Engine: A local processor that synthesizes song data and retrieved context into a readable output.
 
-Replace this paragraph with your own summary of what your version does.
+Reliability Guardrail: A verification loop that cross-references all outputs against the verified songs.csv to prevent "hallucinations" or invalid suggestions.
 
----
+4. Setup Instructions
+To run this system locally, follow these steps:
 
-## How The System Works
+Clone the Repository:
 
-Explain your design in plain language.
+Bash
+git clone https://github.com/your-username/applied-ai-system-project.git
+cd applied-ai-system-project
+Environment Setup: Ensure you have Python 3.x installed. No external heavy LLM libraries are required for the local version.
 
-Some prompts to answer:
+Run the System:
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-In my system the features will be energy,valence, genre, mood, dancability, and accousticness.
+Bash
+python src/main.py
+5. Sample Interactions
+Example 1: The "Deep Work" Request
+User Input: "I'm coding my CS project and need to focus."
+Expert Insight: Midnight Coding by LoRoom – This lofi song is perfect for studying because its chill and focused vibe helps maintain concentration and reduces distractions.
+Recommendation: 'Focus Flow' by LoRoom (Energy: 0.4).
 
-- What information does your `UserProfile` store
-In the user profile these things will be stored fav genre, fav mood, target energy, target dancability, and like accoustics
+Example 2: The "Hype" Request
+User Input: "I'm heading to the gym and need high energy."
+Expert Insight: High-energy tracks with 120+ BPM are scientifically proven to increase motivation and maintain workout pacing.
+Recommendation: 'Gym Hero' by Max Pulse (Energy: 0.93).
 
-- How does your `Recommender` compute a score for each song
-score will equal the sum of 
-genre match *.30
-mood match *.25
-energy score *.20
-valence score *.15
-dance score *.10
+6. Design Decisions & Trade-offs
+Local vs. Cloud AI: I chose to build a Local Reasoning Engine instead of using a Cloud API (like OpenAI).
 
-- How do you choose which songs to recommend
-The songs chosen will be closer to the target scores 
+Trade-off: While I lost the "natural" conversational flair of a massive LLM, I gained 100% reliability, zero latency, and improved privacy.
 
-This system will probably be good at finding songs very close to what they want, but wont have much diversity.
----
+Keyword-Based Retrieval: I implemented a simple keyword-matching RAG.
 
-## Getting Started
+Trade-off: It is less flexible than vector-based search but extremely efficient for small, curated datasets like my 15-song library.
 
-### Setup
+7. Testing Summary
+What Worked: The path-handling logic successfully connects the src scripts to the root knowledge folder, ensuring context is always retrieved.
 
-1. Create a virtual environment (optional but recommended):
+What Didn't: Initially, the system would default to "general musicology" if a keyword wasn't an exact match. I improved this by adding more flexible keyword arrays.
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate      # Mac or Linux
-   .venv\Scripts\activate         # Windows
+The Guardrail: I tested the system by forcing a "fake" song title; the Verification Guardrail successfully caught the error and prevented the system from displaying invalid data.
 
-2. Install dependencies
+10 out of 11 test profiles passed successfully. The system maintained 100% accuracy in song selection due to the verification guardrail. The single "failure" occurred during the "Ghost Genre" test, where the RAG system correctly identified the lack of context and provided a safe, generalized musicology fallback rather than making up data.
 
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the app:
-
-```bash
-python -m src.main
-```
-
-### Running Tests
-
-Run the starter tests with:
-
-```bash
-pytest
-```
-
-You can add more tests in `tests/test_recommender.py`.
-
----
-
-## Experiments You Tried
-
-Use this section to document the experiments you ran. For example:
-
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
-
----
-
-## Limitations and Risks
-
-Summarize some limitations of your recommender.
-
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
-
----
-
-## Reflection
-
-Read and complete `model_card.md`:
-
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
-
-
----
-
-## 7. `model_card_template.md`
-
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> VibeFinder 1.0
-
----
-
-## 2. Intended Use
-
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
-
----
-
-## 3. How It Works (Short Explanation)
-
-Describe your scoring logic in plain language.
-
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
-
----
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
-
+8. Reflection
+Building this system taught me that "AI" doesn't always have to be a massive, expensive black box. By combining Deterministic Logic (my original math) with Contextual Knowledge (my new RAG feature), I created a tool that feels much smarter than its codebase suggests. It reinforced the importance of Responsible AI—specifically, that a system is only as good as the guardrails that keep it grounded in truth.

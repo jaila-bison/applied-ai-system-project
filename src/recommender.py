@@ -1,5 +1,7 @@
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
+import os
+
 
 @dataclass
 class Song:
@@ -131,3 +133,34 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tup
     scored = [(song, score(song), explain(song)) for song in songs]
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored[:k]
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_knowledge_context(user_query: str) -> str:
+    query_lower = user_query.lower()
+    
+    # Keyword check
+    if any(w in query_lower for w in ["coding", "study", "focus", "project"]):
+        target_file = "studyjams.txt"
+    elif any(w in query_lower for w in ["workout", "gym", "energy"]):
+        target_file = "workoutjams.txt"
+    else:
+        target_file = "feelthefeels.txt"
+        
+    # Build the absolute path to the knowledge folder at root
+    file_path = os.path.join(BASE_DIR, "knowledge", target_file)
+    
+    try:
+        with open(file_path, "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        # Debugging tip: print the path if it fails so you can see where it's looking
+        return f"Error: Could not find file at {file_path}"
+def verify_song_in_library(song_title: str, songs: List[Dict]) -> bool:
+    """
+    GUARDRAIL STEP:  ensures the AI doesn't hallucinate a song 
+    that isn't in CSV.
+    """
+    # Create a list of all titles in your CSV (lowercased for easy matching)
+    valid_titles = [s["title"].lower().strip() for s in songs]
+    return song_title.lower().strip() in valid_titles

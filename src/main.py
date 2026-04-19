@@ -1,58 +1,55 @@
-"""
-Command line runner for the Music Recommender Simulation.
-
-This file helps you quickly run and test your recommender.
-
-You will implement the functions in recommender.py:
-- load_songs
-- score_song
-- recommend_songs
-"""
-
 import os
-from recommender import load_songs, recommend_songs
+from litellm import completion 
+from recommender import (
+    load_songs, 
+    recommend_songs, 
+    get_knowledge_context, 
+    verify_song_in_library
+)
 
 _CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "songs.csv")
 
-def print_recommendations(label: str, user_prefs: dict, songs: list, k: int = 5) -> None:
-    print("\n" + "=" * 50)
-    print(f"  Profile : {label}")
-    print(f"  Prefs   : {user_prefs}")
-    print("=" * 50)
-    try:
-        recommendations = recommend_songs(user_prefs, songs, k=k)
-        for i, (song, score, explanation) in enumerate(recommendations, start=1):
-            print(f"\n  #{i}  {song['title']}  —  {song['artist']}")
-            print(f"       Score : {score:.2f}")
-            print(f"       Why   : {explanation}")
-    except Exception as e:
-        print(f"\n  ERROR: {type(e).__name__}: {e}")
-    print("=" * 50)
+def get_local_reasoning(user_prefs: dict, songs: list) -> str:
+    """
+    Simulates an AI recommendation by using local RAG logic 
+    instead of an external API call.
+    """
+    # 1. RAG STEP: Get the context from your text files
+    query = f"{user_prefs.get('mood')} {user_prefs.get('genre')}"
+    context = get_knowledge_context(query)
+    
+    # 2. MATH STEP: Get the best song from your existing logic
+    math_recs = recommend_songs(user_prefs, songs, k=1)
+    song_obj = math_recs[0][0]
+    
+    # 3. GENERATION STEP: Create a "templated" response
+    # This mimics what an LLM would do by combining data and context
+    explanation = (
+        f"Expert Insight: {context.strip()}\n"
+        f"Recommendation: Based on your request for a {user_prefs.get('mood')} vibe, "
+        f"I suggest '{song_obj['title']}' by {song_obj['artist']}. "
+        f"This matches your target energy of {user_prefs.get('energy')}."
+    )
 
+    # 4. GUARDRAIL STEP: Still check if the song is valid!
+    if verify_song_in_library(song_obj['title'], songs):
+        return f"--- Verified Local AI Output ---\n{explanation}"
+    else:
+        return "Guardrail Triggered: Recommendation not found in library."
 
 def main() -> None:
     songs = load_songs(_CSV_PATH)
-    print(f"Loaded {len(songs)} songs")
+    print(f"--- Music Discovery System Initialized ---")
+    print(f"Knowledge Base Loaded. {len(songs)} verified tracks in library.")
 
-    profiles = [
-        # Standard profiles
-        ("Lofi User",           {"genre": "lofi",    "mood": "focused",   "energy": 0.40, "target_valence": 0.58, "target_danceability": 0.60}),
-        ("Gym User",            {"genre": "hip-hop", "mood": "energetic", "energy": 0.90, "target_valence": 0.72, "target_danceability": 0.91}),
-        ("Folk User",           {"genre": "folk",    "mood": "nostalgic", "energy": 0.30, "target_valence": 0.62, "target_danceability": 0.38}),
-        # Adversarial profiles
-        ("Metal but Happy",     {"genre": "metal",   "mood": "happy",     "energy": 0.90, "target_valence": 0.80, "target_danceability": 0.80}),
-        ("Chill but Intense",   {"genre": "lofi",    "mood": "chill",     "energy": 0.95, "target_valence": 0.60, "target_danceability": 0.60}),
-        ("Phantom Mood (sad)",  {"genre": "hip-hop", "mood": "sad",       "energy": 0.85, "target_valence": 0.30, "target_danceability": 0.70}),
-        ("Ghost Genre (country)",{"genre": "country","mood": "nostalgic", "energy": 0.35, "target_valence": 0.65, "target_danceability": 0.40}),
-        ("Extremist (all zero)",{"genre": "classical","mood": "melancholic","energy": 0.0,"target_valence": 0.0,  "target_danceability": 0.0}),
-        ("Out-of-Range Energy", {"genre": "pop",     "mood": "happy",     "energy": 1.5,  "target_valence": 0.5,  "target_danceability": 0.5}),
-        ("Case Mismatch",       {"genre": "Lo-Fi",   "mood": "Chill",     "energy": 0.40, "target_valence": 0.58, "target_danceability": 0.60}),
-        ("None Energy (crash)", {"genre": "lofi",    "mood": "focused",   "energy": None, "target_valence": 0.58, "target_danceability": 0.60}),
-    ]
-
-    for label, user_prefs in profiles:
-        print_recommendations(label, user_prefs, songs)
-
+    # Let's just test one profile for your video walkthrough
+    test_profile = {"genre": "lofi", "mood": "focused", "energy": 0.40}
+    
+    print("\n[User Request]: I'm coding my CS project and need to focus.")
+    result = get_local_reasoning(test_profile, songs)
+    print("-" * 50)
+    print(result)
+    print("-" * 50)
 
 if __name__ == "__main__":
     main()
